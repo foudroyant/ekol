@@ -1,0 +1,18 @@
+# Developer tools' files
+.lite_workspace.lua
+
+# Neutralinojs binaries and builds
+/bin
+/dist
+/Ekol-win_x64
+/Ekol_App
+
+# Base de données locale (données runtime, pas du code source)
+ekol.db
+
+# Neutralinojs client (minified)
+neutralino.js
+
+# Neutralinojs related files
+.storage
+*.log

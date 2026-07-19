@@ -1,0 +1,54 @@
+{
+  "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
+  "applicationId": "app.ekol.school",
+  "version": "1.0.0",
+  "defaultMode": "window",
+  "port": 0,
+  "documentRoot": "/resources/",
+  "url": "/",
+  "enableServer": true,
+  "enableNativeAPI": true,
+  "tokenSecurity": "one-time",
+  "logging": {
+    "enabled": true,
+    "writeToLogFile": false
+  },
+  "nativeAllowList": [
+    "app.*",
+    "os.getPath",
+    "os.showSaveDialog",
+    "os.showOpenDialog",
+    "debug.log",
+    "filesystem.readBinaryFile",
+    "filesystem.writeBinaryFile",
+    "filesystem.createDirectory",
+    "filesystem.getStats"
+  ],
+  "modes": {
+    "window": {
+      "title": "Ekol — Gestion Scolaire",
+      "width": 1280,
+      "height": 800,
+      "minWidth": 960,
+      "minHeight": 600,
+      "center": true,
+      "fullScreen": false,
+      "alwaysOnTop": false,
+      "icon": "/resources/icons/appIcon.png",
+      "enableInspector": false,
+      "borderless": false,
+      "maximize": false,
+      "hidden": false,
+      "resizable": true,
+      "exitProcessOnClose": true
+    }
+  },
+  "cli": {
+    "binaryName": "Ekol",
+    "resourcesPath": "/resources/",
+    "extensionsPath": "/extensions/",
+    "clientLibrary": "/resources/js/neutralino.js",
+    "binaryVersion": "6.8.0",
+    "clientVersion": "6.8.0"
+  }
+}
