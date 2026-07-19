@@ -199,6 +199,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     await initDB();
     setCurrency(dbGetCurrency());
     router.init();
+    checkForAppUpdate();
   } catch (err) {
     document.getElementById('app').innerHTML =
       '<div class="p-8 text-red-600 font-medium">Erreur critique : ' + err.message + '</div>';
