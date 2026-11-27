@@ -2,7 +2,7 @@
 ; Compiler avec Inno Setup (https://jrsoftware.org/isdl.php)
 
 #define MyAppName "Ekol"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "Bambyno Studio App"
 #define MyAppURL "https://github.com/foudroyant/ekol"
 #define MyAppExeName "Ekol.exe"
