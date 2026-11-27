@@ -386,6 +386,7 @@ routerAdd('/styles',         renderStyles);
 routerAdd('/recherche',      renderRecherche);
 routerAdd('/utilisateurs',   renderUtilisateurs);
 routerAdd('/organisations',  renderOrganisations);
+routerAdd('/cloud',          renderCloud);
 routerAdd('/parametres',     renderParametres);
 
 // Boot

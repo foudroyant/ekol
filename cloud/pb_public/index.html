@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ekol Cloud — Sauvegarde &amp; synchronisation</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="diamond"></span>Ekol Cloud</div>
+  <nav id="tabs" class="hidden">
+    <button data-tab="account" class="on">Compte</button>
+    <button data-tab="subscription">Abonnement</button>
+    <button data-tab="devices">Appareils</button>
+    <button data-tab="backups">Sauvegardes</button>
+    <button id="logout-btn" class="right">Déconnexion</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Auth -->
+  <section id="view-auth">
+    <div class="card narrow">
+      <h1>Ekol Cloud</h1>
+      <p class="muted">Sauvegarde et synchronisation de votre application Ekol — <b>25 000 FCFA / an</b>.</p>
+      <div class="switch">
+        <button id="show-login" class="on">Connexion</button>
+        <button id="show-signup">Créer un compte</button>
+      </div>
+      <form id="login-form" class="stack">
+        <label>Email<input type="email" name="email" required autocomplete="username"></label>
+        <label>Mot de passe<input type="password" name="password" required autocomplete="current-password"></label>
+        <button type="submit" class="btn">Se connecter</button>
+      </form>
+      <form id="signup-form" class="stack hidden">
+        <label>Nom complet<input type="text" name="name" required autocomplete="name"></label>
+        <label>Email<input type="email" name="email" required autocomplete="username"></label>
+        <label>Téléphone (Mobile Money)<input type="tel" name="phone" placeholder="+242 …" autocomplete="tel"></label>
+        <label>Mot de passe<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+        <label>Confirmer<input type="password" name="passwordConfirm" required minlength="8" autocomplete="new-password"></label>
+        <button type="submit" class="btn">Créer mon compte</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Compte -->
+  <section id="view-account" class="hidden">
+    <div class="card">
+      <h2>Mon compte</h2>
+      <p id="account-info" class="muted"></p>
+      <h3>Associer une application Ekol</h3>
+      <p class="muted">Dans l'application de bureau, ouvrez <b>Cloud</b> → <b>Générer un code</b>, puis saisissez-le ici :</p>
+      <form id="pair-form" class="row">
+        <input type="text" id="pair-code" placeholder="Ex : k7x2k-9pqa4-b7de2" maxlength="17" autocomplete="off" class="code">
+        <button type="submit" class="btn">Associer</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Abonnement -->
+  <section id="view-subscription" class="hidden">
+    <div class="card">
+      <h2>Abonnement — 25 000 FCFA / an</h2>
+      <p class="muted">La sauvegarde et la synchronisation cloud sont actives pendant toute la durée de l'abonnement. Après votre paiement (Mobile Money ou espèces auprès de votre point de vente), un administrateur active l'abonnement sous 24 h.</p>
+      <div class="row">
+        <button id="subscribe-btn" class="btn">Demander / renouveler (25 000 FCFA)</button>
+      </div>
+      <table>
+        <thead><tr><th>Plan</th><th>Montant</th><th>Statut</th><th>Expire le</th><th>Réf. paiement</th></tr></thead>
+        <tbody id="subs-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Appareils -->
+  <section id="view-devices" class="hidden">
+    <div class="card">
+      <h2>Mes appareils</h2>
+      <p class="muted">Chaque application Ekol installée (bureau, secrétariat…) apparaît ici après appairage.</p>
+      <table>
+        <thead><tr><th>Appareil</th><th>Établissement</th><th>Abonnement</th><th>Dernière synchro</th><th></th></tr></thead>
+        <tbody id="devices-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Sauvegardes -->
+  <section id="view-backups" class="hidden">
+    <div class="card">
+      <h2>Sauvegardes &amp; exports CSV</h2>
+      <div class="row">
+        <label>Appareil
+          <select id="backup-device"></select>
+        </label>
+        <button id="refresh-backups" class="btn ghost">Actualiser</button>
+      </div>
+      <div id="backups-list"></div>
+      <h3>Restaurer sur un poste</h3>
+      <p class="muted">Téléchargez un <b>snapshot.json</b>, puis dans l'application de bureau : <b>Cloud</b> → <b>Restaurer depuis un fichier</b>. La restauration remplace les données de l'établissement courant — vérifiez que vous êtes sur le bon établissement.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">Ekol Cloud · 25 000 FCFA / an · Bambyno Studio App</footer>
+<script src="/app.js"></script>
+</body>
+</html>

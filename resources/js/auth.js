@@ -241,6 +241,7 @@ async function startSession(user) {
   document.getElementById('main-panel').classList.remove('hidden');
 
   applyRoleUI();
+  if (typeof cloudBootCheck === 'function') cloudBootCheck();
   if (!window.location.hash) window.location.hash = '#/dashboard';
   router.init();
   if (typeof checkForAppUpdate === 'function') checkForAppUpdate();

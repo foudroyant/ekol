@@ -35,6 +35,9 @@ async function initDB() {
 
 async function saveDB() {
   await Neutralino.filesystem.writeBinaryFile(DB_PATH, db.export().buffer);
+  if (typeof cloudMarkDirty === 'function') {
+    try { cloudMarkDirty(); } catch (e) { /* marquage mémoire uniquement */ }
+  }
 }
 
 function _runSchema() {
@@ -1311,6 +1314,83 @@ async function dbSetCurrency(code) {
   }
   db.run("UPDATE settings SET value = ? WHERE key = 'currency'", [code]);
   await saveDB();
+}
+
+// ─── RESTAURATION CLOUD ────────────────────────────────────────────────────────
+
+function dbRestoreSnapshot(snap) {
+  if (!snap || snap.app !== 'ekol-snapshot' || !snap.tables) {
+    throw new Error('Fichier de sauvegarde invalide.');
+  }
+  var t = snap.tables;
+  var required = ['organizations', 'org_settings', 'users', 'periodes', 'styles_notation',
+    'composantes_style', 'matieres', 'cycles', 'classes', 'classe_matieres',
+    'eleves', 'paiements', 'notes'];
+  for (var i = 0; i < required.length; i++) {
+    if (!Array.isArray(t[required[i]])) throw new Error('Sauvegarde incomplète (table ' + required[i] + ').');
+  }
+  if (!t.organizations.length || Number(t.organizations[0].id) !== Number(currentOrgId)) {
+    throw new Error('Cette sauvegarde appartient à un autre établissement.');
+  }
+  for (var j = 0; j < t.users.length; j++) {
+    if (Number(t.users[j].organization_id) !== Number(currentOrgId)) {
+      throw new Error('Données incohérentes dans la sauvegarde (utilisateurs).');
+    }
+  }
+
+  function insertRows(table, rows, columns) {
+    if (!rows.length) return;
+    var cols = columns || Object.keys(rows[0]);
+    var placeholders = cols.map(function() { return '?'; }).join(',');
+    var stmt = db.prepare('INSERT INTO ' + table + ' (' + cols.join(',') + ') VALUES (' + placeholders + ')');
+    for (var k = 0; k < rows.length; k++) {
+      var vals = cols.map(function(c) { return rows[k][c]; });
+      stmt.run(vals);
+    }
+    stmt.free();
+  }
+
+  db.run('BEGIN');
+  try {
+    db.run('DELETE FROM notes WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM paiements WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM eleves WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM classe_matieres WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM classes WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM composantes_style WHERE style_id IN (SELECT id FROM styles_notation WHERE organization_id = ?)', [currentOrgId]);
+    db.run('DELETE FROM styles_notation WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM matieres WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM cycles WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM periodes WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM users WHERE organization_id = ?', [currentOrgId]);
+    db.run('DELETE FROM org_settings WHERE organization_id = ?', [currentOrgId]);
+
+    var orgRow = t.organizations[0];
+    var orgCols = Object.keys(orgRow).filter(function(c) { return c !== 'id'; });
+    var orgSets = orgCols.map(function(c) { return c + ' = ?'; }).join(',');
+    var orgVals = orgCols.map(function(c) { return orgRow[c]; });
+    orgVals.push(currentOrgId);
+    db.run('UPDATE organizations SET ' + orgSets + ' WHERE id = ?', orgVals);
+
+    insertRows('org_settings', t.org_settings);
+    insertRows('users', t.users);
+    insertRows('periodes', t.periodes);
+    insertRows('styles_notation', t.styles_notation);
+    insertRows('composantes_style', t.composantes_style);
+    insertRows('matieres', t.matieres);
+    insertRows('cycles', t.cycles);
+    insertRows('classes', t.classes);
+    insertRows('classe_matieres', t.classe_matieres);
+    insertRows('eleves', t.eleves);
+    insertRows('paiements', t.paiements);
+    insertRows('notes', t.notes);
+
+    db.run('COMMIT');
+  } catch (e) {
+    db.run('ROLLBACK');
+    throw e;
+  }
+  return saveDB();
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────

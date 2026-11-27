@@ -30,7 +30,10 @@ en local dans une base SQLite, sans serveur ni connexion internet.
 - **Paiements** — référence auto-générée (REC-YYYYMMDD-XXXX), validation de solde, modes de
   paiement, historique.
 - **Exports** — CSV (`;` + BOM UTF-8) et Excel (`.xls` HTML), par classe, par étudiant ou fiche
-  individuelle.
+  individuelle ; les mêmes CSV sont envoyés au cloud à chaque synchronisation.
+- **Cloud (option payante, 25 000 FCFA / an)** — sauvegarde et synchronisation
+  via PocketBase : domaine + code d'appairage, abonnement annuel, vérification checksum,
+  alertes de désynchronisation, restauration, exports CSV côté cloud.
 - **Paramètres** — monnaie, barème, gestion des notes absentes, périodes, sauvegarde/restauration.
 
 ## Crédits

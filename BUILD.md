@@ -87,3 +87,12 @@ suffit pour eux). L'étape 5 (nouvel installateur) ne sert qu'aux nouvelles inst
 **Limite connue** : si une mise à jour nécessite de changer `Ekol.exe` lui-même (upgrade du runtime
 Neutralino, changement de `neutralino.config.json`, nouvelle icône...), l'updater intégré ne suffit pas —
 il faudra redistribuer le nouvel installateur manuellement (pas encore automatisé).
+
+## 5. Backend Cloud (option payante)
+
+Le dossier `cloud/` contient tout le nécessaire : voir [`cloud/README.md`](cloud/README.md).
+
+Rappel du cycle : binaire PocketBase + `pb_migrations/` + `pb_hooks/` + `pb_public/` sur un
+VPS derrière TLS → superuser initial → l'app de bureau s'y connecte par domaine + code
+d'appairage (page **Cloud**). Abonnement : 25 000 FCFA / an, activé manuellement après
+paiement (interface `/_/` → collection `subscriptions`).

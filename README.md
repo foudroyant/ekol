@@ -38,6 +38,15 @@ compilé en WebAssembly), elle fonctionne sous Windows, macOS et Linux.
 - Plusieurs établissements cloisonnés dans une même base (`organization_id` sur toutes les tables).
 - Sauvegarde / restauration complète de la base (super administrateur).
 
+### Cloud — sauvegarde & synchronisation (option payante, 25 000 FCFA / an)
+- Backend **PocketBase** (un seul binaire, `cloud/`) : comptes, appairage par code,
+  abonnements, sauvegardes, exports CSV téléchargeables depuis le site cloud.
+- L'app de bureau se connecte par **domaine + code d'appairage** (plusieurs clouds possibles).
+- L'utilisateur crée son compte sur le site du cloud, saisit le code affiché par l'app,
+  souscrit (25 000 FCFA / an, activation après paiement) — l'app vérifie la synchro
+  (checksum SHA-256) et alerte en cas de désynchronisation ou d'expiration.
+- Voir [`cloud/README.md`](cloud/README.md) pour déployer le cloud.
+
 ## Démarrage
 
 ### Utiliser l'application

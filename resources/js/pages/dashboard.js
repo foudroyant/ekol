@@ -1,3 +1,25 @@
+// ─── Bandeau Cloud : alerte si désynchronisé ou sans abonnement ──────────────
+function cloudBanner() {
+  if (typeof cloudIsLinked !== 'function' || typeof canManage !== 'function') return '';
+  if (!canManage()) return '';
+  var linked = false;
+  try { linked = cloudIsLinked(); } catch (e) { return ''; }
+  if (!linked) return '';
+  var dirty = (typeof _cloudDirty !== 'undefined') && _cloudDirty;
+  var st = (typeof _cloudLastStatus !== 'undefined') ? _cloudLastStatus : null;
+  if (st && st.state === 'synced' && !dirty) return '';
+  var label = (typeof cloudStatusLabel === 'function') ? cloudStatusLabel(st) : null;
+  var text = label ? label.text : (dirty ? 'Modifications locales non synchronisées' : 'Vérification cloud en attente');
+  var isErr = !!((label && label.level === 'error') || (st && st.state === 'no-sub'));
+  var cls = isErr ? 'border-red-200 bg-red-50' : 'bg-indigo-50 border border-indigo-100';
+  return '<div class="card p-4 mb-5 ' + cls + '">' +
+    '<div class="flex items-center justify-between flex-wrap gap-2">' +
+      '<div class="text-sm text-indigo-900"><span class="font-semibold">Cloud : </span>' + escapeHtml(text) + '</div>' +
+      '<a href="#/cloud" class="btn btn-sm btn-secondary">' + (isErr ? 'Gérer l\'abonnement' : 'Ouvrir Cloud') + '</a>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderDashboard() {
   var stats = dbGetDashboardStats();
   var pct = stats.expected > 0 ? Math.round((stats.collected / stats.expected) * 100) : 0;
@@ -108,6 +130,8 @@ function renderDashboard() {
       '<h1 class="page-title mb-0">Tableau de bord</h1>' +
       (periode ? '<span class="chip chip-indigo">Période : ' + escapeHtml(periode.nom) + '</span>' : '') +
     '</div>' +
+
+    cloudBanner() +
 
     '<div class="grid grid-cols-4 gap-5 mb-8">' +
       '<div class="card p-6">' +

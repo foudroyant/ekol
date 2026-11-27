@@ -24,6 +24,7 @@ resources/
 │   ├── auth.js         # PBKDF2, connexion, session, rôles, changement d'établissement
 │   ├── grades.js       # Moteur pur : moyennes, mentions, rangs
 │   ├── export.js       # Exports CSV / Excel (aucune dépendance)
+│   ├── cloud.js        # Client PocketBase : snapshot, checksum, sync, restore
 │   ├── router.js       # Routeur SPA (hash) + garde d'authentification
 │   ├── app.js          # Globals, routes, paramètres, sauvegarde/restauration
 │   ├── updater.js      # Mise à jour automatique des ressources
@@ -39,8 +40,14 @@ resources/
 │       ├── styles.js
 │       ├── utilisateurs.js
 │       ├── organisations.js
+│       ├── cloud.js        # Domaine, appairage, sync, restauration, exports CSV
 │       └── paiement.js
-└── icons/              # Logo SVG + icônes PNG
+└── icons/
+└── cloud/                  # Backend optionnel : PocketBase + mini-site (25 000 FCFA/an)
+    ├── pb_migrations/      # Schéma : devices, pairing_codes, subscriptions, backups, exports
+    ├── pb_hooks/           # Appairage, abonnement, expirations (cron)
+    ├── pb_public/          # Mini-site : compte, abonnement, appareils, sauvegardes, CSV
+    └── README.md           # Déploiement du cloud (un seul binaire)              # Logo SVG + icônes PNG
 ```
 
 ## Modèle de données
