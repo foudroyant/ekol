@@ -1,0 +1,23 @@
+[Unit]
+Description=Ekol Cloud — sauvegarde & synchronisation (PocketBase)
+Documentation=https://ekol.folioia.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ekol-cloud
+Group=ekol-cloud
+WorkingDirectory=/srv/apps/ekol-cloud
+ExecStart=/srv/apps/ekol-cloud/pocketbase serve \
+  --http=127.0.0.1:8100 \
+  --dir=/srv/apps/ekol-cloud/pb_data \
+  --publicDir=/srv/apps/ekol/cloud/pb_public \
+  --migrationsDir=/srv/apps/ekol/cloud/pb_migrations \
+  --hooksDir=/srv/apps/ekol/cloud/pb_hooks
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

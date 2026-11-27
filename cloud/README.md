@@ -28,7 +28,7 @@ cp -r <repo>/cloud/pb_migrations cloud/pb_hooks cloud/pb_public .
 ./pocketbase superuser upsert admin@example.com "mot-de-passe-solide"
 
 # 4. Lancement (données dans ./pb_data)
-./pocketbase serve --http=127.0.0.1:8090
+./pocketbase serve --http=127.0.0.1:8100
 ```
 
 Le domaine de production est **`https://ekol.folioia.com`** (voir `Caddyfile`).
@@ -107,13 +107,30 @@ Le connecteur de paiement automatique (ex. Mobile Money API) se branchera plus t
 ## Reverse proxy (Caddy)
 
 Le fichier [`Caddyfile`](Caddyfile) est prêt : `ekol.folioia.com` → PocketBase local
-(`127.0.0.1:8090`), TLS automatique, compression, en-têtes de sécurité.
+(`127.0.0.1:8100`), TLS automatique, compression, en-têtes de sécurité.
 
 ```bash
 # Sur le VPS (ports 80/443 ouverts, DNS déjà en place : 104.237.9.60)
 sudo cp Caddyfile /etc/caddy/Caddyfile   # ou : caddy run --config Caddyfile
 sudo systemctl reload caddy
 ```
+
+Déploiement type (systemd — voir [`ekol-cloud.service`](ekol-cloud.service)) :
+
+```bash
+sudo useradd -r -s /usr/sbin/nologin ekol-cloud
+sudo mkdir -p /srv/apps/ekol-cloud/pb_data
+sudo cp pocketbase /srv/apps/ekol-cloud/
+sudo chown -R ekol-cloud:ekol-cloud /srv/apps/ekol-cloud
+sudo cp cloud/ekol-cloud.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo -u ekol-cloud /srv/apps/ekol-cloud/pocketbase superuser upsert admin@example.com "mot-de-passe-solide" --dir /srv/apps/ekol-cloud/pb_data
+sudo systemctl enable --now ekol-cloud
+```
+
+Les dossiers `pb_migrations/`, `pb_hooks/` et `pb_public/` sont lus **directement
+depuis le dépôt** (flags `--migrationsDir`, `--hooksDir`, `--publicDir`) : un
+`git pull` + `systemctl restart ekol-cloud` suffit pour mettre à jour.
 
 Limitez le débit sur `/api/collections/pairing_codes` et `/api/collections/devices`
 (créations publiques) si vous êtes exposé au spam.
