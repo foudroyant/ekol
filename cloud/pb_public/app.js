@@ -164,10 +164,11 @@ document.getElementById("pair-form").addEventListener("submit", async function(e
 document.getElementById("subscribe-btn").addEventListener("click", async function() {
   if (!confirm("Demander l'abonnement annuel (25 000 FCFA) ? Le statut restera « En attente » jusqu'à validation du paiement.")) return;
   try {
+    // Valeurs verrouillées : le serveur les exige à l'identique (voir hooks).
     await api("/collections/subscriptions/records", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user: store.user.id })
+      body: JSON.stringify({ user: store.user.id, plan: "annuel", amount: 25000, currency: "FCFA", status: "pending" })
     });
     toast("Demande envoyée — statut : en attente de validation du paiement");
     loadSubs();
@@ -176,8 +177,13 @@ document.getElementById("subscribe-btn").addEventListener("click", async functio
 
 async function loadSubs() {
   try {
-    var res = await api("/collections/subscriptions/records?sort=-created&perPage=20");
-    document.getElementById("subs-tbody").innerHTML = res.items.map(function(s) {
+    // Pas de tri serveur (même quirk PocketBase que pour les sauvegardes :
+    // sort + règle d'accès = 400). Tri côté client.
+    var res = await api("/collections/subscriptions/records?perPage=50");
+    var items = (res.items || []).slice().sort(function(a, b) {
+      return String(b.created).localeCompare(String(a.created));
+    });
+    document.getElementById("subs-tbody").innerHTML = items.map(function(s) {
       return "<tr><td>" + (s.plan || "annuel") + "</td><td>" + s.amount + " " + s.currency + "</td>" +
         "<td>" + pill(s.status) + "</td><td>" + fmtDate(s.expires_at) + "</td>" +
         "<td>" + (s.payment_ref || "—") + "</td></tr>";
