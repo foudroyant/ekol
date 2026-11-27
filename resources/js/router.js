@@ -9,6 +9,9 @@ function routerNavigate(path) {
 }
 
 function _handleRoute() {
+  // Aucune route n'est rendue tant que l'utilisateur n'est pas connecté.
+  if (typeof currentUser === 'undefined' || !currentUser) return;
+
   var hash = window.location.hash.replace(/^#/, '') || '/dashboard';
   for (var i = 0; i < _routes.length; i++) {
     var r = _routes[i];
@@ -18,9 +21,15 @@ function _handleRoute() {
     if (match) {
       var params = {};
       paramNames.forEach(function(name, idx) { params[name] = match[idx + 1]; });
+      var aliases = {
+        '/classe': '/classes',
+        '/eleve': '/eleves',
+        '/inscription': '/eleves',
+        '/paiement': '/eleves'
+      };
       document.querySelectorAll('[data-route]').forEach(function(el) {
         var base = '/' + hash.split('/')[1];
-        el.classList.toggle('nav-active', el.dataset.route === base);
+        el.classList.toggle('nav-active', el.dataset.route === (aliases[base] || base));
       });
       r.handler(params);
       return;

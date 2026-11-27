@@ -1,80 +1,134 @@
+var _elevesCurrent = [];
+
 function _buildElevesTable(eleves) {
   if (!eleves.length) {
-    return '<tr><td colspan="6" class="text-center py-10 text-gray-400">Aucun élève trouvé.</td></tr>';
+    return '<tr><td colspan="8" class="empty-state">Aucun élève trouvé.</td></tr>';
   }
   return eleves.map(function(e) {
     var isSolde = e.solde_restant <= 0;
+    var mention = e.a_des_notes ? e.mention : '—';
     return '<tr>' +
-      '<td class="font-mono text-xs text-gray-500">' + e.matricule + '</td>' +
-      '<td class="font-medium">' + e.prenom + ' ' + e.nom + '</td>' +
-      '<td><span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">' + e.cycle_nom + ' › ' + e.classe_nom + '</span></td>' +
-      '<td>' + formatMoney(e.montant_total_du) + '</td>' +
-      '<td>' +
-        '<span class="' + (isSolde ? 'badge-solde' : 'badge-retard') + '">' +
-          (isSolde ? 'Soldé' : formatMoney(e.solde_restant) + ' restant') +
-        '</span>' +
-      '</td>' +
+      '<td class="font-mono text-xs text-gray-500">' + escapeHtml(e.matricule) + '</td>' +
+      '<td class="font-medium">' + escapeHtml(e.prenom + ' ' + e.nom) + '</td>' +
+      '<td><span class="chip chip-indigo">' + escapeHtml(e.cycle_nom + ' › ' + e.classe_nom) + '</span></td>' +
+      '<td class="font-semibold ' + (e.a_des_notes ? 'text-indigo-700' : 'text-gray-400') + '">' +
+        (e.a_des_notes ? gradeFormat(e.moyenne_generale) : '—') + '</td>' +
+      '<td>' + (e.rang === null || e.rang === undefined ? '—' : e.rang) + '</td>' +
+      '<td><span class="' + gradeMentionClass(mention) + '">' + mention + '</span></td>' +
+      '<td><span class="' + (isSolde ? 'badge-solde' : 'badge-retard') + '">' +
+        (isSolde ? 'Soldé' : formatMoney(e.solde_restant)) + '</span></td>' +
       '<td><a href="#/eleve/' + e.id + '" class="btn btn-sm btn-secondary">Voir</a></td>' +
     '</tr>';
+  }).join('');
+}
+
+function _periodeOptions(selectedId) {
+  return dbGetAllPeriodes().map(function(p) {
+    return '<option value="' + p.id + '"' + (p.id === selectedId ? ' selected' : '') + '>' +
+      escapeHtml(p.nom) + '</option>';
   }).join('');
 }
 
 function renderEleves() {
   var classes = dbGetAllClasses();
   var cycles  = dbGetAllCycles();
-  var eleves  = dbGetAllEleves({});
+  var periodes = dbGetAllPeriodes();
+  var selectedPeriode = periodes.length ? periodes[0].id : null;
 
   var classeOptions = classes.map(function(c) {
-    return '<option value="' + c.id + '">' + c.cycle_nom + ' › ' + c.nom + '</option>';
+    return '<option value="' + c.id + '">' + escapeHtml(c.cycle_nom + ' › ' + c.nom) + '</option>';
   }).join('');
   var cycleOptions = cycles.map(function(c) {
-    return '<option value="' + c.id + '">' + c.nom + '</option>';
+    return '<option value="' + c.id + '">' + escapeHtml(c.nom) + '</option>';
   }).join('');
+
+  _elevesCurrent = dbGetElevesWithGrades({ periode_id: selectedPeriode });
 
   document.getElementById('app').innerHTML =
     '<div class="flex items-center justify-between mb-6">' +
-      '<h1 class="page-title mb-0">Élèves</h1>' +
-      '<a href="#/inscription" class="btn btn-primary">' +
-        '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>' +
-        'Nouvelle inscription' +
-      '</a>' +
+      '<div>' +
+        '<h1 class="page-title mb-1">Élèves</h1>' +
+        '<p class="text-sm text-gray-500">Liste triable et filtrable, avec moyennes et rangs par période.</p>' +
+      '</div>' +
+      '<div class="flex gap-2 flex-wrap">' +
+        '<button class="btn btn-secondary" onclick="exportElevesList(_elevesCurrent, Number(document.getElementById(\'e-periode\').value), \'csv\')">Export CSV</button>' +
+        '<button class="btn btn-secondary" onclick="exportElevesList(_elevesCurrent, Number(document.getElementById(\'e-periode\').value), \'xls\')">Export Excel</button>' +
+        (canManage() ? '<a href="#/inscription" class="btn btn-primary">+ Nouvelle inscription</a>' : '') +
+      '</div>' +
     '</div>' +
 
     '<div class="card p-4 mb-5">' +
-      '<div class="grid grid-cols-4 gap-3">' +
-        '<input type="text" id="f-search" class="form-input col-span-2" placeholder="Rechercher par nom, prénom, matricule...">' +
-        '<select id="f-cycle" class="form-input"><option value="">Tous les cycles</option>' + cycleOptions + '</select>' +
-        '<select id="f-classe" class="form-input"><option value="">Toutes les classes</option>' + classeOptions + '</select>' +
-        '<select id="f-statut" class="form-input col-span-2"><option value="">Tous les statuts</option><option value="solde">Soldé</option><option value="retard">En retard</option></select>' +
-        '<div class="col-span-2 flex items-center text-sm text-gray-400" id="f-count">' + eleves.length + ' élève(s)</div>' +
+      '<div class="toolbar">' +
+        '<div class="grow"><label class="form-label">Rechercher</label>' +
+          '<input type="text" id="e-search" class="form-input" placeholder="Nom, prénom, matricule…"></div>' +
+        '<div><label class="form-label">Période</label><select id="e-periode" class="form-input">' + _periodeOptions(selectedPeriode) + '</select></div>' +
+        '<div><label class="form-label">Cycle</label><select id="e-cycle" class="form-input"><option value="">Tous</option>' + cycleOptions + '</select></div>' +
+        '<div><label class="form-label">Classe</label><select id="e-classe" class="form-input"><option value="">Toutes</option>' + classeOptions + '</select></div>' +
+        '<div><label class="form-label">Paiement</label><select id="e-statut" class="form-input">' +
+          '<option value="">Tous</option><option value="solde">Soldé</option><option value="retard">En retard</option>' +
+        '</select></div>' +
+        '<div><label class="form-label">Mention</label><select id="e-mention" class="form-input">' +
+          '<option value="">Toutes</option>' +
+          ['Excellent', 'Très bien', 'Bien', 'Assez bien', 'Passable', 'Insuffisant', '—'].map(function(m) {
+            return '<option value="' + m + '">' + (m === '—' ? 'Sans notes' : m) + '</option>';
+          }).join('') +
+        '</select></div>' +
+        '<div><label class="form-label">Trier</label><select id="e-sort" class="form-input">' +
+          '<option value="nom">Nom A → Z</option>' +
+          '<option value="nom_desc">Nom Z → A</option>' +
+          '<option value="rang">Rang</option>' +
+          '<option value="moyenne_desc">Moyenne décroissante</option>' +
+          '<option value="moyenne_asc">Moyenne croissante</option>' +
+          '<option value="matricule">Matricule</option>' +
+          '<option value="classe">Classe</option>' +
+        '</select></div>' +
+        '<div class="toolbar-count"><span id="e-count">' + _elevesCurrent.length + ' élève(s)</span></div>' +
       '</div>' +
     '</div>' +
 
     '<div class="card">' +
-      '<table>' +
-        '<thead><tr><th>Matricule</th><th>Nom</th><th>Classe</th><th>Total dû</th><th>Solde</th><th></th></tr></thead>' +
-        '<tbody id="eleves-tbody">' + _buildElevesTable(eleves) + '</tbody>' +
-      '</table>' +
+      '<div class="table-wrap">' +
+        '<table class="table-compact">' +
+          '<thead><tr><th>Matricule</th><th>Nom</th><th>Classe</th><th>Moyenne</th><th>Rang</th><th>Mention</th><th>Solde</th><th></th></tr></thead>' +
+          '<tbody id="eleves-tbody">' + _buildElevesTable(_elevesCurrent) + '</tbody>' +
+        '</table>' +
+      '</div>' +
     '</div>';
 
   function doFilter() {
-    var filtered = dbGetAllEleves({
-      search:    document.getElementById('f-search').value.trim(),
-      cycle_id:  document.getElementById('f-cycle').value,
-      classe_id: document.getElementById('f-classe').value,
-      statut:    document.getElementById('f-statut').value
+    _elevesCurrent = dbGetElevesWithGrades({
+      search:     document.getElementById('e-search').value.trim(),
+      periode_id: document.getElementById('e-periode').value,
+      cycle_id:   document.getElementById('e-cycle').value,
+      classe_id:  document.getElementById('e-classe').value,
+      statut:     document.getElementById('e-statut').value,
+      mention:    document.getElementById('e-mention').value,
+      sort:       document.getElementById('e-sort').value
     });
-    document.getElementById('eleves-tbody').innerHTML = _buildElevesTable(filtered);
-    document.getElementById('f-count').textContent = filtered.length + ' élève(s)';
+    document.getElementById('eleves-tbody').innerHTML = _buildElevesTable(_elevesCurrent);
+    document.getElementById('e-count').textContent = _elevesCurrent.length + ' élève(s)';
   }
 
-  document.getElementById('f-search').addEventListener('input', doFilter);
-  document.getElementById('f-cycle').addEventListener('change', doFilter);
-  document.getElementById('f-classe').addEventListener('change', doFilter);
-  document.getElementById('f-statut').addEventListener('change', doFilter);
+  document.getElementById('e-search').addEventListener('input', doFilter);
+  document.getElementById('e-periode').addEventListener('change', doFilter);
+  document.getElementById('e-cycle').addEventListener('change', doFilter);
+  document.getElementById('e-classe').addEventListener('change', doFilter);
+  document.getElementById('e-statut').addEventListener('change', doFilter);
+  document.getElementById('e-mention').addEventListener('change', doFilter);
+  document.getElementById('e-sort').addEventListener('change', doFilter);
 }
 
 function renderInscriptionForm() {
+  if (!canManage()) {
+    document.getElementById('app').innerHTML =
+      '<a href="#/eleves" class="back-link mb-4 inline-flex">← Retour</a>' +
+      '<div class="card p-8 text-center text-gray-500 max-w-md mx-auto mt-8">' +
+        '<p class="text-lg font-medium mb-2">Accès réservé</p>' +
+        '<p class="text-sm">Seuls les administrateurs peuvent inscrire des élèves.</p>' +
+      '</div>';
+    return;
+  }
+
   var classes = dbGetAllClasses();
 
   if (classes.length === 0) {
@@ -95,7 +149,7 @@ function renderInscriptionForm() {
     return '<option value="' + c.id + '"' +
       ' data-inscription="' + c.montant_inscription + '"' +
       ' data-mensuel="' + c.montant_mensuel + '">' +
-      c.cycle_nom + ' › ' + c.nom + (c.annee_scolaire ? ' (' + c.annee_scolaire + ')' : '') +
+      escapeHtml(c.cycle_nom + ' › ' + c.nom) + (c.annee_scolaire ? ' (' + escapeHtml(c.annee_scolaire) + ')' : '') +
       '</option>';
   }).join('');
 
@@ -221,46 +275,71 @@ function renderInscriptionForm() {
 function renderRecherche() {
   var classes = dbGetAllClasses();
   var cycles  = dbGetAllCycles();
+  var periodes = dbGetAllPeriodes();
+  var selectedPeriode = periodes.length ? periodes[0].id : null;
 
   var classeOptions = classes.map(function(c) {
-    return '<option value="' + c.id + '">' + c.cycle_nom + ' › ' + c.nom + '</option>';
+    return '<option value="' + c.id + '">' + escapeHtml(c.cycle_nom + ' › ' + c.nom) + '</option>';
   }).join('');
   var cycleOptions = cycles.map(function(c) {
-    return '<option value="' + c.id + '">' + c.nom + '</option>';
+    return '<option value="' + c.id + '">' + escapeHtml(c.nom) + '</option>';
   }).join('');
 
   document.getElementById('app').innerHTML =
     '<h1 class="page-title">Recherche avancée</h1>' +
     '<div class="card p-5 mb-6">' +
-      '<div class="grid grid-cols-2 gap-3 mb-3">' +
-        '<input type="text" id="f-search" class="form-input col-span-2" placeholder="Nom, prénom, matricule...">' +
-        '<select id="f-cycle" class="form-input"><option value="">Tous les cycles</option>' + cycleOptions + '</select>' +
-        '<select id="f-classe" class="form-input"><option value="">Toutes les classes</option>' + classeOptions + '</select>' +
-        '<select id="f-statut" class="form-input"><option value="">Tous les statuts</option><option value="solde">Soldé</option><option value="retard">En retard</option></select>' +
-        '<div class="flex items-center text-sm text-gray-400" id="f-count"></div>' +
+      '<div class="toolbar">' +
+        '<div class="grow"><label class="form-label">Rechercher</label><input type="text" id="f-search" class="form-input" placeholder="Nom, prénom, matricule…"></div>' +
+        '<div><label class="form-label">Période</label><select id="f-periode" class="form-input">' + _periodeOptions(selectedPeriode) + '</select></div>' +
+        '<div><label class="form-label">Cycle</label><select id="f-cycle" class="form-input"><option value="">Tous</option>' + cycleOptions + '</select></div>' +
+        '<div><label class="form-label">Classe</label><select id="f-classe" class="form-input"><option value="">Toutes</option>' + classeOptions + '</select></div>' +
+        '<div><label class="form-label">Paiement</label><select id="f-statut" class="form-input">' +
+          '<option value="">Tous</option><option value="solde">Soldé</option><option value="retard">En retard</option>' +
+        '</select></div>' +
+        '<div><label class="form-label">Mention</label><select id="f-mention" class="form-input">' +
+          '<option value="">Toutes</option>' +
+          ['Excellent', 'Très bien', 'Bien', 'Assez bien', 'Passable', 'Insuffisant', '—'].map(function(m) {
+            return '<option value="' + m + '">' + (m === '—' ? 'Sans notes' : m) + '</option>';
+          }).join('') +
+        '</select></div>' +
+        '<div><label class="form-label">Trier</label><select id="f-sort" class="form-input">' +
+          '<option value="nom">Nom A → Z</option><option value="rang">Rang</option>' +
+          '<option value="moyenne_desc">Moyenne décroissante</option><option value="moyenne_asc">Moyenne croissante</option>' +
+          '<option value="matricule">Matricule</option><option value="classe">Classe</option>' +
+        '</select></div>' +
+        '<div class="toolbar-count"><span id="f-count"></span></div>' +
       '</div>' +
     '</div>' +
     '<div class="card">' +
-      '<table>' +
-        '<thead><tr><th>Matricule</th><th>Nom</th><th>Classe</th><th>Total dû</th><th>Solde</th><th></th></tr></thead>' +
-        '<tbody id="search-tbody"></tbody>' +
-      '</table>' +
+      '<div class="table-wrap">' +
+        '<table class="table-compact">' +
+          '<thead><tr><th>Matricule</th><th>Nom</th><th>Classe</th><th>Moyenne</th><th>Rang</th><th>Mention</th><th>Solde</th><th></th></tr></thead>' +
+          '<tbody id="search-tbody"></tbody>' +
+        '</table>' +
+      '</div>' +
     '</div>';
 
   function doSearch() {
-    var results = dbGetAllEleves({
-      search:    document.getElementById('f-search').value.trim(),
-      cycle_id:  document.getElementById('f-cycle').value,
-      classe_id: document.getElementById('f-classe').value,
-      statut:    document.getElementById('f-statut').value
+    var results = dbGetElevesWithGrades({
+      search:     document.getElementById('f-search').value.trim(),
+      periode_id: document.getElementById('f-periode').value,
+      cycle_id:   document.getElementById('f-cycle').value,
+      classe_id:  document.getElementById('f-classe').value,
+      statut:     document.getElementById('f-statut').value,
+      mention:    document.getElementById('f-mention').value,
+      sort:       document.getElementById('f-sort').value
     });
+    _elevesCurrent = results;
     document.getElementById('search-tbody').innerHTML = _buildElevesTable(results);
     document.getElementById('f-count').textContent = results.length + ' résultat(s)';
   }
 
   document.getElementById('f-search').addEventListener('input', doSearch);
+  document.getElementById('f-periode').addEventListener('change', doSearch);
   document.getElementById('f-cycle').addEventListener('change', doSearch);
   document.getElementById('f-classe').addEventListener('change', doSearch);
   document.getElementById('f-statut').addEventListener('change', doSearch);
+  document.getElementById('f-mention').addEventListener('change', doSearch);
+  document.getElementById('f-sort').addEventListener('change', doSearch);
   doSearch();
 }

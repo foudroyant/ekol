@@ -2,17 +2,36 @@
 
 ## Description
 
-Ekol est une application de bureau cross-platform de gestion scolaire développée avec Neutralinojs. Elle permet aux établissements scolaires de gérer leurs cycles, classes, élèves et paiements, le tout en local sur une base SQLite.
+Ekol est une application de bureau cross-platform de gestion scolaire développée avec Neutralinojs.
+Elle permet aux établissements de gérer leurs cycles, classes, élèves, paiements et notes, le tout
+en local dans une base SQLite, sans serveur ni connexion internet.
 
 ## Fonctionnalités
 
-- **Dashboard** — Vue d'ensemble avec statistiques (élèves actifs, total collecté, attendu, taux de collecte par cycle, tendance mensuelle des paiements)
-- **Cycles** — CRUD des cycles pédagogiques (Primaire, Collège, Lycée, etc.)
-- **Classes** — CRUD des classes liées aux cycles, avec montants d'inscription et mensualités par classe
-- **Élèves** — Inscription avec matricule auto-généré (EKL-YYYY-XXXX), liste avec filtres (nom, classe, cycle, statut), recherche avancée
-- **Fiche élève** — Détail complet, historique des paiements, solde, modification des infos, désactivation
-- **Paiements** — Enregistrement avec référence auto-générée (REC-YYYYMMDD-XXXX), validation de solde, modes de paiement (Espèces, Chèque, Virement, Mobile Money)
-- **Paramètres** — Monnaie générale configurable (XAF, XOF, FCFA, EUR, USD, GBP, NGN)
+- **Authentification locale** — comptes SQLite, mots de passe hachés en PBKDF2-SHA256, rôles
+  super administrateur / administrateur / enseignant, changement d'établissement.
+- **Multi-établissements** — plusieurs établissements cloisonnés dans une même base
+  (`organization_id` sur toutes les données).
+- **Dashboard** — élèves actifs, collecte, attendu, taux de collecte, moyenne générale de la
+  période, notes saisies, top 5 élèves, moyennes par classe, tendance mensuelle.
+- **Cycles** — CRUD des cycles pédagogiques (Primaire, Collège, Lycée, etc.).
+- **Classes** — CRUD des classes, montants d'inscription et mensualités, matières rattachées,
+  style de notation avec surcharge possible.
+- **Matières** — catalogue réutilisable, couple nom + coefficient (une même matière peut avoir
+  plusieurs coefficients).
+- **Styles de notation** — composantes libres avec poids relatifs, presets fournis dont
+  **Standard 40/60** par défaut, duplication et style par défaut par établissement.
+- **Notes** — grille de saisie par classe / période / matière, calcul en direct, navigation
+  clavier, barème paramétrable, périodes renommables.
+- **Résultats** — moyenne matière, moyenne générale pondérée par coefficient, rang (ex-aequo),
+  mentions, notes absentes comptées 0 ou ignorées.
+- **Élèves** — inscription avec matricule auto-généré (EKL-YYYY-XXXX), fiche complète, liste
+  triable et filtrable (nom, matricule, classe, moyenne, rang, mention, période).
+- **Paiements** — référence auto-générée (REC-YYYYMMDD-XXXX), validation de solde, modes de
+  paiement, historique.
+- **Exports** — CSV (`;` + BOM UTF-8) et Excel (`.xls` HTML), par classe, par étudiant ou fiche
+  individuelle.
+- **Paramètres** — monnaie, barème, gestion des notes absentes, périodes, sauvegarde/restauration.
 
 ## Crédits
 
@@ -27,6 +46,13 @@ Créé par Stéphane Bamby Bazebibouta
 - SQLite via sql.js (WASM)
 - Vanilla JS (ES5 compatible)
 - Tailwind CSS (suppléments inline)
+- Web Crypto (PBKDF2-SHA256)
+
+## Documentation
+
+- `docs/notation.md` — formules, presets et mentions.
+- `BUILD.md` — build, installateur et mises à jour.
+- `AGENTS.md` — architecture et conventions.
 
 ## Prochaines étapes
 

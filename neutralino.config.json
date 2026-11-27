@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
   "applicationId": "app.ekol.school",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "defaultMode": "window",
   "port": 0,
   "documentRoot": "/resources/",
@@ -21,8 +21,10 @@
     "debug.log",
     "filesystem.readBinaryFile",
     "filesystem.writeBinaryFile",
+    "filesystem.writeFile",
     "filesystem.createDirectory",
-    "filesystem.getStats"
+    "filesystem.getStats",
+    "updater.*"
   ],
   "modes": {
     "window": {

@@ -1,10 +1,13 @@
 // ─── Mise à jour automatique ────────────────────────────────────────────────
 // Vérifie au démarrage si une nouvelle version des ressources (JS/CSS/HTML)
-// est disponible, via le manifeste publié sur la branche "updates" du dépôt
-// (raw.githubusercontent.com sert du CORS, contrairement aux assets GitHub
-// Releases classiques — Neutralino.updater utilise fetch() côté navigateur).
+// est disponible, via le manifeste versionné dans le projet public lui-même
+// (docs/updates/manifest.json, servi par GitHub Pages — CORS * natif,
+// contrairement aux assets GitHub Releases classiques : Neutralino.updater
+// utilise fetch() côté navigateur).
+// Voir BUILD.md §4 pour publier une mise à jour (copier le resources.neu
+// construit dans docs/updates/).
 
-var UPDATE_MANIFEST_URL = 'https://raw.githubusercontent.com/foudroyant/ekol/updates/manifest.json';
+var UPDATE_MANIFEST_URL = 'https://foudroyant.github.io/ekol/updates/manifest.json';
 
 function checkForAppUpdate() {
   Neutralino.updater.checkForUpdates(UPDATE_MANIFEST_URL).then(function(manifest) {

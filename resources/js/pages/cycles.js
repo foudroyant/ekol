@@ -1,15 +1,18 @@
 function renderCycles() {
   var cycles = dbGetAllCycles();
+  var admin = canManage();
 
   var rows = cycles.map(function(c) {
     return '<tr>' +
-      '<td class="font-medium">' + c.nom + '</td>' +
+      '<td class="font-medium">' + escapeHtml(c.nom) + '</td>' +
       '<td>' + (c.ordre !== null && c.ordre !== undefined ? c.ordre : '—') + '</td>' +
-      '<td>' +
-        '<div class="flex gap-2">' +
-          '<button class="btn btn-sm btn-secondary" onclick="openCycleModal(' + c.id + ')">Modifier</button>' +
-          '<button class="btn btn-sm btn-danger" onclick="confirmDeleteCycle(' + c.id + ')">Supprimer</button>' +
-        '</div>' +
+      '<td class="text-right">' +
+        (admin
+          ? '<div class="flex gap-2 justify-end">' +
+              '<button class="btn btn-sm btn-secondary" onclick="openCycleModal(' + c.id + ')">Modifier</button>' +
+              '<button class="btn btn-sm btn-danger" onclick="confirmDeleteCycle(' + c.id + ')">Supprimer</button>' +
+            '</div>'
+          : '<span class="text-xs text-gray-400">Lecture seule</span>') +
       '</td>' +
     '</tr>';
   }).join('');
@@ -17,10 +20,12 @@ function renderCycles() {
   document.getElementById('app').innerHTML =
     '<div class="flex items-center justify-between mb-6">' +
       '<h1 class="page-title mb-0">Cycles</h1>' +
-      '<button class="btn btn-primary" onclick="openCycleModal(0)">' +
-        '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>' +
-        'Nouveau cycle' +
-      '</button>' +
+      (admin
+        ? '<button class="btn btn-primary" onclick="openCycleModal(0)">' +
+            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>' +
+            'Nouveau cycle' +
+          '</button>'
+        : '') +
     '</div>' +
     '<div class="card">' +
       '<table>' +
@@ -39,7 +44,7 @@ function openCycleModal(id) {
       '<input type="hidden" name="id" value="' + (cycle ? cycle.id : '') + '">' +
       '<div>' +
         '<label class="form-label">Nom du cycle *</label>' +
-        '<input type="text" name="nom" value="' + (cycle ? cycle.nom : '') + '" required class="form-input" placeholder="ex: Primaire, Collège, Lycée">' +
+        '<input type="text" name="nom" value="' + (cycle ? escapeHtml(cycle.nom) : '') + '" required class="form-input" placeholder="ex: Primaire, Collège, Lycée">' +
       '</div>' +
       '<div>' +
         '<label class="form-label">Ordre d\'affichage</label>' +
