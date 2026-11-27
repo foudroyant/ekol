@@ -3,108 +3,163 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ekol Cloud — Sauvegarde &amp; synchronisation</title>
-<link rel="stylesheet" href="/style.css">
+<title>Ekol Cloud — Gestion scolaire hors-ligne · Notes, élèves &amp; paiements</title>
+<meta name="description" content="Ekol : application de bureau open source pour gérer élèves, notes et paiements. 100 % hors-ligne, sauvegarde cloud 25 000 FCFA / an. Téléchargement gratuit.">
+<style>
+:root{
+  --bg:#040506; --panel:#07080a; --line:#232425; --txt:#ffffff;
+  --muted:#9c9c9d; --dim:#6a6b6c; --accent:#ff6363; --fill:#e6e6e6; --dark:#454647;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+.top{position:sticky;top:12px;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 10px 10px 18px;border:1px solid #363739;border-radius:12px;background:rgba(7,8,10,.8);backdrop-filter:blur(24px);margin:12px auto;max-width:1100px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px}
+.diamond{width:13px;height:13px;background:var(--accent);transform:rotate(45deg);border-radius:3px}
+nav.links{display:flex;gap:22px;font-size:13px;color:var(--muted)}
+nav.links a:hover{color:#fff}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--fill);color:var(--dark);font-size:14px;font-weight:500;padding:10px 16px;border-radius:8px;border:none;cursor:pointer}
+.btn:hover{background:#fff}
+.btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.btn.ghost:hover{color:#fff}
+.hero{position:relative;text-align:center;padding:96px 0 64px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 45% at 50% 26%,rgba(4,63,150,.7),rgba(6,18,37,.25) 70%,transparent 75%);pointer-events:none}
+.hero h1{position:relative;font-size:52px;font-weight:400;line-height:1.17;letter-spacing:.2px;max-width:820px;margin:0 auto}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero p.sub{position:relative;color:var(--muted);max-width:580px;margin:24px auto 0}
+.hero-cta{position:relative;display:flex;gap:10px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+.meta{font-family:monospace;font-size:12px;color:var(--dim);margin-top:16px}
+.meta b{color:var(--muted);font-weight:400}
+section.block{padding:72px 0;border-top:1px solid #161718}
+.eyebrow{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+h2.sec{font-size:30px;font-weight:500;margin-bottom:12px}
+p.lead{color:var(--muted);max-width:640px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:36px}
+@media(max-width:860px){.grid3,.grid2{grid-template-columns:1fr}.hero h1{font-size:36px}nav.links{display:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px}
+.card h3{font-size:19px;font-weight:500;margin:14px 0 8px}
+.card p{font-size:14px;color:var(--muted)}
+.icon{width:52px;height:52px;border-radius:50%;background:#111214;display:flex;align-items:center;justify-content:center;font-size:22px}
+.badge{display:inline-block;background:#1b1c1e;color:#fff;font-size:11px;border-radius:6px;padding:2px 8px;margin-bottom:6px}
+.price{font-size:40px;font-weight:600;margin:8px 0}
+.price small{font-size:16px;color:var(--muted);font-weight:400}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:36px}
+@media(max-width:860px){.steps{grid-template-columns:repeat(2,1fr)}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.step b{display:flex;width:32px;height:32px;border-radius:50%;background:rgba(255,99,99,.14);color:var(--accent);align-items:center;justify-content:center;margin-bottom:12px}
+.step p{font-size:14px;color:var(--muted)}
+footer{border-top:1px solid #161718;padding:40px 0 56px;text-align:center}
+.foot-links{display:flex;gap:22px;justify-content:center;font-size:13px;color:var(--muted);margin:18px 0;flex-wrap:wrap}
+.foot-links a:hover{color:#fff}
+.credit{font-size:12px;color:var(--dim);margin-top:12px}
+</style>
 </head>
 <body>
+
 <header class="top">
-  <div class="brand"><span class="diamond"></span>Ekol Cloud</div>
-  <nav id="tabs" class="hidden">
-    <button data-tab="account" class="on">Compte</button>
-    <button data-tab="subscription">Abonnement</button>
-    <button data-tab="devices">Appareils</button>
-    <button data-tab="backups">Sauvegardes</button>
-    <button id="logout-btn" class="right">Déconnexion</button>
+  <a class="brand" href="#top"><span class="diamond"></span>Ekol Cloud</a>
+  <nav class="links">
+    <a href="#fonctionnalites">Fonctionnalités</a>
+    <a href="#cloud">Cloud · 25 000 FCFA</a>
+    <a href="#telecharger">Télécharger</a>
   </nav>
+  <a class="btn" href="/compte/">Mon compte</a>
 </header>
 
-<main class="wrap">
-  <div id="toast" class="toast hidden"></div>
+<main id="top">
+<div class="hero">
+  <div class="wrap">
+    <h1>La gestion scolaire de votre établissement, <em>sans internet.</em></h1>
+    <p class="sub">Ekol gère vos élèves, vos notes au style Standard 40/60 et vos paiements dans une seule application de bureau. Vos données restent sur votre machine — avec une copie synchronisée sur votre cloud si vous le souhaitez.</p>
+    <div class="hero-cta">
+      <a class="btn" href="https://github.com/foudroyant/ekol/releases/download/v1.2.0/Ekol-v1.2.0-win_x64.zip">Télécharger pour Windows</a>
+      <a class="btn ghost" href="/compte/">Créer mon compte cloud</a>
+    </div>
+    <p class="meta"><b>v1.2.0</b> &nbsp;|&nbsp; Windows · Linux · macOS &nbsp;|&nbsp; 100 % hors-ligne &nbsp;|&nbsp; Open source MIT</p>
+  </div>
+</div>
 
-  <!-- Auth -->
-  <section id="view-auth">
-    <div class="card narrow">
-      <h1>Ekol Cloud</h1>
-      <p class="muted">Sauvegarde et synchronisation de votre application Ekol — <b>25 000 FCFA / an</b>.</p>
-      <div class="switch">
-        <button id="show-login" class="on">Connexion</button>
-        <button id="show-signup">Créer un compte</button>
+<section class="block" id="fonctionnalites">
+  <div class="wrap">
+    <p class="eyebrow">Fonctionnalités</p>
+    <h2 class="sec">Tout le quotidien d'une école, dans une seule fenêtre.</h2>
+    <p class="lead">Pas de serveur, pas d'abonnement obligatoire, pas de connexion requise. Ekol stocke tout dans un fichier SQLite local.</p>
+    <div class="grid3">
+      <div class="card"><div class="icon">▦</div><h3>Notes Standard 40/60</h3><p>Devoir 20, TP/Exposé 20, Session 60 par défaut. Composantes libres, barème paramétrable, moyennes, rangs et mentions calculés en direct.</p></div>
+      <div class="card"><div class="icon">◈</div><h3>Multi-établissements</h3><p>Plusieurs écoles cloisonnées dans une seule base. Chacune a ses classes, styles, périodes et utilisateurs.</p></div>
+      <div class="card"><div class="icon">⬣</div><h3>100 % hors-ligne</h3><p>Application de bureau + SQLite. Vos données ne quittent jamais votre machine. Sauvegarde et restauration en un clic.</p></div>
+      <div class="card"><div class="icon">⬔</div><h3>Comptes &amp; rôles locaux</h3><p>Super admin, administrateur, enseignant. Mots de passe hachés, aucune donnée en ligne.</p></div>
+      <div class="card"><div class="icon">▤</div><h3>Exports CSV &amp; Excel</h3><p>Listes triables par moyenne, rang et mention. CSV compatible Excel FR et fichiers Excel sans dépendance.</p></div>
+      <div class="card"><div class="icon">⬒</div><h3>Paiements &amp; dashboard</h3><p>Inscriptions, mensualités, soldes et retards. Collecte par cycle, top 5, tendance mensuelle.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="cloud">
+  <div class="wrap">
+    <p class="eyebrow">Option payante</p>
+    <h2 class="sec">Ekol Cloud — votre école, sauvegardée.</h2>
+    <p class="lead">Une copie de vos données sur votre cloud, des exports CSV accessibles en ligne, et la sérénité en cas de panne : disque perdu, poste volé ou réinstallation, vous restaurez en quelques clics.</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="price">25 000 <small>FCFA / an</small></div>
+        <p>Sauvegarde automatique vérifiée (checksum), synchronisation multi-postes, exports CSV en ligne, alertes de désynchronisation. Un seul abonnement par établissement.</p>
+        <div class="hero-cta" style="justify-content:flex-start;margin-top:20px">
+          <a class="btn" href="/compte/">Créer mon compte</a>
+          <a class="btn ghost" href="https://wa.me/242064837637">WhatsApp : +242 06 48 37 637</a>
+        </div>
       </div>
-      <form id="login-form" class="stack">
-        <label>Email<input type="email" name="email" required autocomplete="username"></label>
-        <label>Mot de passe<input type="password" name="password" required autocomplete="current-password"></label>
-        <button type="submit" class="btn">Se connecter</button>
-      </form>
-      <form id="signup-form" class="stack hidden">
-        <label>Nom complet<input type="text" name="name" required autocomplete="name"></label>
-        <label>Email<input type="email" name="email" required autocomplete="username"></label>
-        <label>Téléphone (Mobile Money)<input type="tel" name="phone" placeholder="+242 …" autocomplete="tel"></label>
-        <label>Mot de passe<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
-        <label>Confirmer<input type="password" name="passwordConfirm" required minlength="8" autocomplete="new-password"></label>
-        <button type="submit" class="btn">Créer mon compte</button>
-      </form>
-    </div>
-  </section>
-
-  <!-- Compte -->
-  <section id="view-account" class="hidden">
-    <div class="card">
-      <h2>Mon compte</h2>
-      <p id="account-info" class="muted"></p>
-      <h3>Associer une application Ekol</h3>
-      <p class="muted">Dans l'application de bureau, ouvrez <b>Cloud</b> → <b>Générer un code</b>, puis saisissez-le ici :</p>
-      <form id="pair-form" class="row">
-        <input type="text" id="pair-code" placeholder="Ex : k7x2k-9pqa4-b7de2" maxlength="17" autocomplete="off" class="code">
-        <button type="submit" class="btn">Associer</button>
-      </form>
-    </div>
-  </section>
-
-  <!-- Abonnement -->
-  <section id="view-subscription" class="hidden">
-    <div class="card">
-      <h2>Abonnement — 25 000 FCFA / an</h2>
-      <p class="muted">La sauvegarde et la synchronisation cloud sont actives pendant toute la durée de l'abonnement. Après votre paiement (Mobile Money ou espèces auprès de votre point de vente), un administrateur active l'abonnement sous 24 h.</p>
-      <div class="row">
-        <button id="subscribe-btn" class="btn">Demander / renouveler (25 000 FCFA)</button>
+      <div class="card">
+        <span class="badge">Comment payer</span>
+        <h3>Activation sous 24 h</h3>
+        <p>1. Créez votre compte ci-dessus et cliquez « Demander ». 2. Réglez par WhatsApp au <b style="color:#fff">+242 06 48 37 637</b> ou par email à <b style="color:#fff">stephanebazebibouta@gmail.com</b> en précisant votre email de compte. 3. Votre abonnement passe à « Actif » et l'application se synchronise.</p>
+        <div class="hero-cta" style="justify-content:flex-start;margin-top:20px">
+          <a class="btn ghost" href="mailto:stephanebazebibouta@gmail.com?subject=Ekol%20Cloud%20%E2%80%94%20abonnement%2025%20000%20FCFA">Payer par email</a>
+        </div>
       </div>
-      <table>
-        <thead><tr><th>Plan</th><th>Montant</th><th>Statut</th><th>Expire le</th><th>Réf. paiement</th></tr></thead>
-        <tbody id="subs-tbody"></tbody>
-      </table>
     </div>
-  </section>
+    <div class="steps">
+      <div class="step"><b>1</b><p><strong style="color:#fff">Téléchargez</strong> l'application pour Windows, Linux ou macOS.</p></div>
+      <div class="step"><b>2</b><p><strong style="color:#fff">Créez votre compte</strong> cloud et demandez l'abonnement.</p></div>
+      <div class="step"><b>3</b><p><strong style="color:#fff">Appairez</strong> : saisissez dans votre compte le code affiché par l'app.</p></div>
+      <div class="step"><b>4</b><p><strong style="color:#fff">Synchronisez</strong> en un clic ; restaurez à tout moment.</p></div>
+    </div>
+  </div>
+</section>
 
-  <!-- Appareils -->
-  <section id="view-devices" class="hidden">
-    <div class="card">
-      <h2>Mes appareils</h2>
-      <p class="muted">Chaque application Ekol installée (bureau, secrétariat…) apparaît ici après appairage.</p>
-      <table>
-        <thead><tr><th>Appareil</th><th>Établissement</th><th>Abonnement</th><th>Dernière synchro</th><th></th></tr></thead>
-        <tbody id="devices-tbody"></tbody>
-      </table>
+<section class="block" id="telecharger">
+  <div class="wrap">
+    <p class="eyebrow">Télécharger</p>
+    <h2 class="sec">Installez Ekol en deux minutes.</h2>
+    <p class="lead">Téléchargez le zip de votre plateforme, décompressez, lancez — aucune installation requise. Au premier lancement, créez votre établissement et votre compte.</p>
+    <div class="hero-cta" style="justify-content:flex-start">
+      <a class="btn" href="https://github.com/foudroyant/ekol/releases/download/v1.2.0/Ekol-v1.2.0-win_x64.zip">Windows x64</a>
+      <a class="btn ghost" href="https://github.com/foudroyant/ekol/releases/download/v1.2.0/Ekol-v1.2.0-linux_x64.zip">Linux x64</a>
+      <a class="btn ghost" href="https://github.com/foudroyant/ekol/releases/download/v1.2.0/Ekol-v1.2.0-mac_universal.zip">macOS universel</a>
+      <a class="btn ghost" href="https://github.com/foudroyant/ekol/releases">Toutes les versions</a>
     </div>
-  </section>
-
-  <!-- Sauvegardes -->
-  <section id="view-backups" class="hidden">
-    <div class="card">
-      <h2>Sauvegardes &amp; exports CSV</h2>
-      <div class="row">
-        <label>Appareil
-          <select id="backup-device"></select>
-        </label>
-        <button id="refresh-backups" class="btn ghost">Actualiser</button>
-      </div>
-      <div id="backups-list"></div>
-      <h3>Restaurer sur un poste</h3>
-      <p class="muted">Téléchargez un <b>snapshot.json</b>, puis dans l'application de bureau : <b>Cloud</b> → <b>Restaurer depuis un fichier</b>. La restauration remplace les données de l'établissement courant — vérifiez que vous êtes sur le bon établissement.</p>
-    </div>
-  </section>
+    <p class="meta">v1.2.0 &nbsp;|&nbsp; gratuit, sans compte &nbsp;|&nbsp; code source : github.com/foudroyant/ekol</p>
+  </div>
+</section>
 </main>
 
-<footer class="foot">Ekol Cloud · 25 000 FCFA / an · Bambyno Studio App</footer>
-<script src="/app.js"></script>
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top" style="justify-content:center"><span class="diamond"></span>Ekol Cloud</a>
+    <div class="foot-links">
+      <a href="#fonctionnalites">Fonctionnalités</a>
+      <a href="#cloud">Cloud</a>
+      <a href="#telecharger">Télécharger</a>
+      <a href="/compte/">Mon compte</a>
+      <a href="https://github.com/foudroyant/ekol">GitHub</a>
+    </div>
+    <p class="meta"><b>v1.2.0</b> &nbsp;|&nbsp; ekol.folioia.com &nbsp;|&nbsp; MIT open source</p>
+    <p class="credit">Bambyno Studio App — Stéphane Bamby Bazebibouta · WhatsApp +242 06 48 37 637 · stephanebazebibouta@gmail.com</p>
+  </div>
+</footer>
+
 </body>
 </html>

@@ -1,0 +1,30 @@
+# Ekol Cloud — ekol.folioia.com
+# TLS automatique (Let's Encrypt). Prérequis côté serveur :
+#   1. DNS : ekol.folioia.com en A vers l'IP de ce VPS (déjà : 104.237.9.60)
+#   2. Ports 80 et 443 ouverts
+#   3. PocketBase lancé en local : ./pocketbase serve --http=127.0.0.1:8090
+# Rechargement : `caddy reload --config Caddyfile`
+
+ekol.folioia.com {
+	# Frontend statique + API : tout est servi par PocketBase
+	# (landing en HTML pur à /, console du compte à /compte/).
+	reverse_proxy 127.0.0.1:8090
+
+	# Compression
+	encode gzip
+
+	# En-têtes de sécurité (sans casser le fonctionnement de l'app)
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		# Ne pas forcer HSTS avant d'avoir validé le HTTPS de bout en bout
+		# Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	# Logs d'accès (rotation prise en charge nativement)
+	log {
+		output file /var/log/caddy/ekol-cloud.log
+		format json
+	}
+}

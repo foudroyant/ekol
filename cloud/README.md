@@ -8,7 +8,8 @@ aucun autre serveur, aucune dépendance.
 cloud/
 ├── pb_migrations/   schéma : devices, pairing_codes, subscriptions, backups, exports (+ phone sur users)
 ├── pb_hooks/        logique métier : appairage, abonnement, expirations (cron quotidien 2h)
-├── pb_public/       mini-site : compte, abonnement, appairage, sauvegardes, exports CSV
+├── pb_public/          site statique (HTML pur) : landing à `/`, console du compte à `/compte/`
+├── Caddyfile           reverse proxy TLS pour ekol.folioia.com
 └── README.md        ce fichier
 ```
 
@@ -30,9 +31,9 @@ cp -r <repo>/cloud/pb_migrations cloud/pb_hooks cloud/pb_public .
 ./pocketbase serve --http=127.0.0.1:8090
 ```
 
-Mettez un reverse proxy TLS devant (Caddy / Nginx) et exposez un domaine, ex.
-`https://ekol-cloud.example.com`. Plusieurs clouds possibles : chaque établissement (ou
-regroupement) a son domaine, et l'app de bureau mémorise **un domaine par établissement**.
+Le domaine de production est **`https://ekol.folioia.com`** (voir `Caddyfile`).
+Plusieurs clouds possibles : chaque établissement (ou regroupement) a son domaine,
+et l'app de bureau mémorise **un domaine par établissement**.
 
 ## Modèle de données
 
@@ -55,7 +56,9 @@ avec `@request.auth.owner`) : les règles de lecture ne traversent **aucune** re
 ## Abonnement 25 000 FCFA / an
 
 1. L'utilisateur crée son compte sur le mini-site et clique **Demander** → abonnement `pending`.
-2. Il paie (Mobile Money / espèces) et communique la référence.
+2. Il paie et communique la référence + l'email de son compte cloud, au choix :
+   - **WhatsApp** : +242 06 48 37 637 (https://wa.me/242064837637)
+   - **Email** : stephanebazebibouta@gmail.com
 3. L'admin ouvre l'interface PocketBase (`/_/`), passe l'abonnement à `active`, renseigne
    `payment_ref`, `started_at` et `expires_at` (= +365 jours) → les hooks activent aussitôt
    tous les appareils du compte.
@@ -101,12 +104,15 @@ Le connecteur de paiement automatique (ex. Mobile Money API) se branchera plus t
 - **`@request.auth.<champ_personnalisé>`** (ex. `sub_active`, `owner`)
   **fonctionne** dans les règles — c'est le socle du contrôle d'abonnement.
 
-## Reverse proxy minimal (Caddy)
+## Reverse proxy (Caddy)
 
-```
-ekol-cloud.example.com {
-    reverse_proxy 127.0.0.1:8090
-}
+Le fichier [`Caddyfile`](Caddyfile) est prêt : `ekol.folioia.com` → PocketBase local
+(`127.0.0.1:8090`), TLS automatique, compression, en-têtes de sécurité.
+
+```bash
+# Sur le VPS (ports 80/443 ouverts, DNS déjà en place : 104.237.9.60)
+sudo cp Caddyfile /etc/caddy/Caddyfile   # ou : caddy run --config Caddyfile
+sudo systemctl reload caddy
 ```
 
 Limitez le débit sur `/api/collections/pairing_codes` et `/api/collections/devices`
