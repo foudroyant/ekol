@@ -8,10 +8,18 @@ aucun autre serveur, aucune dépendance.
 cloud/
 ├── pb_migrations/   schéma : devices, pairing_codes, subscriptions, backups, exports (+ phone sur users)
 ├── pb_hooks/        logique métier : appairage, abonnement, expirations (cron quotidien 2h)
-├── pb_public/          site statique (HTML pur) : landing à `/`, console du compte à `/compte/`
+├── pb_public/          site statique : landing en HTML pur à `/`, console du compte à `/compte/`
+│   ├── pocketbase.umd.js  SDK PocketBase officiel 0.29.0 (vendored, aucune CDN)
+│   └── compte/     console : index + app + style
 ├── Caddyfile           reverse proxy TLS pour ekol.folioia.com
+├── ekol-cloud.service  unit systemd
 └── README.md        ce fichier
 ```
+
+Transport : les deux clients (bureau `resources/js/cloud.js` et console `pb_public/app.js`)
+utilisent le **SDK PocketBase officiel vendored** (`pocketbase.umd.js` 0.29.0, ~40 Ko,
+aucune dépendance réseau supplémentaire). La landing (`pb_public/index.html`) reste
+en HTML pur, sans JavaScript.
 
 ## Démarrage rapide (VPS)
 

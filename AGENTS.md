@@ -24,7 +24,8 @@ resources/
 │   ├── auth.js         # PBKDF2, connexion, session, rôles, changement d'établissement
 │   ├── grades.js       # Moteur pur : moyennes, mentions, rangs
 │   ├── export.js       # Exports CSV / Excel (aucune dépendance)
-│   ├── cloud.js        # Client PocketBase : snapshot, checksum, sync, restore
+│   ├── cloud.js        # Client PocketBase (SDK vendored 0.29.0) : snapshot, checksum, sync, restore
+│   ├── pocketbase.umd.js # SDK PocketBase officiel 0.29.0 (vendored, aucune CDN)
 │   ├── router.js       # Routeur SPA (hash) + garde d'authentification
 │   ├── app.js          # Globals, routes, paramètres, sauvegarde/restauration
 │   ├── updater.js      # Mise à jour automatique des ressources

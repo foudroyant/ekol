@@ -1,7 +1,9 @@
 // ─── CLOUD — sauvegarde & synchronisation (PocketBase) ────────────────────────
-// Par établissement : un domaine cloud + une identité d'appareil.
+// Par établissement : un domaine + une identité d'appareil.
 // L'app s'authentifie EN TANT QU'APPAREIL (jamais avec le mot de passe user).
 // Abonnement : 25 000 FCFA / an, activé côté cloud après paiement.
+//
+// Transport : SDK PocketBase officiel (pocketbase.umd.js, vendored, 0.29.0).
 
 var CLOUD_PRICE = 25000;
 var CLOUD_CURRENCY = 'FCFA';
@@ -9,6 +11,8 @@ var CLOUD_PLAN = 'annuel';
 var CLOUD_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 var CLOUD_PAIRING_TTL_MIN = 15;
 
+var _cloudPb = null;
+var _cloudPbPublic = null;
 var _cloudToken = null;
 var _cloudDirty = false;
 var _cloudTimer = null;
@@ -57,98 +61,96 @@ function cloudFormatCode(code) {
   return c.slice(0, 5) + '-' + c.slice(5, 10) + '-' + c.slice(10, 15);
 }
 
+function cloudStatus(err) {
+  return (err && typeof err.status === 'number') ? err.status : 0;
+}
+
 function cloudErrorMessage(err, fallback) {
-  var m = (err && err.message) ? err.message : String(err || '');
+  if (cloudStatus(err) === 0) {
+    return 'Cloud injoignable. Vérifiez le domaine et votre connexion.';
+  }
+  var m = null;
+  if (err && err.response) {
+    m = err.response.message || (err.response.data && JSON.stringify(err.response.data));
+  }
+  if (!m) m = (err && err.message) ? String(err.message) : '';
   if (/Failed to fetch|NetworkError|Load failed/i.test(m)) {
     return 'Cloud injoignable. Vérifiez le domaine et votre connexion.';
   }
   return m || fallback || 'Erreur cloud inconnue.';
 }
 
-// ─── Client HTTP PocketBase ────────────────────────────────────────────────
+// ─── Client SDK ─────────────────────────────────────────────────────────────
 
-async function cloudApi(path, opts) {
-  opts = opts || {};
+function cloudBase() {
   var domain = cloudDomain();
   if (!domain) throw new Error('Aucun domaine cloud configuré.');
-  var headers = opts.headers || {};
-  var token = opts.token !== undefined ? opts.token : _cloudToken;
-  if (token) headers['Authorization'] = token;
-  var body = opts.body;
-  if (body !== undefined && !(body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-    body = JSON.stringify(body);
+  return domain;
+}
+
+function cloudPublic() {
+  var base = cloudBase();
+  if (!_cloudPbPublic || _cloudPbPublic.baseUrl !== base) {
+    _cloudPbPublic = new PocketBase(base);
   }
-  var res = await fetch(domain + '/api' + path, {
-    method: opts.method || 'GET',
-    headers: headers,
-    body: (body === undefined || body === null) ? undefined : body
-  });
-  var text = await res.text();
-  var data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
-  if (res.status === 401 && opts.retry !== false && cloudIsLinked()) {
-    _cloudToken = null;
-    try {
-      await cloudDeviceAuth();
-      return cloudApi(path, Object.assign({}, opts, { retry: false }));
-    } catch (e) { /* propage l'erreur d'origine ci-dessous */ }
-  }
-  if (!res.ok) {
-    var msg = (data && (data.message || (data.data && JSON.stringify(data.data)))) || ('Erreur cloud ' + res.status);
-    var err = new Error(msg);
-    err.status = res.status;
-    throw err;
-  }
-  return data;
+  return _cloudPbPublic;
 }
 
 async function cloudDeviceAuth() {
   var email = cloudGetSetting('cloud_device_email', '');
   var secret = cloudGetSetting('cloud_device_secret', '');
   if (!email || !secret) throw new Error('Appareil non enregistré. Générez un code d\'appairage.');
-  var res = await cloudApi('/collections/devices/auth-with-password', {
-    method: 'POST',
-    token: null,
-    retry: false,
-    body: { identity: email, password: secret }
-  });
-  _cloudToken = res.token;
+  var pb = new PocketBase(cloudBase());
+  var res = await pb.collection('devices').authWithPassword(email, secret);
+  _cloudToken = pb.authStore.token;
+  _cloudPb = pb;
   return res;
+}
+
+async function cloudAuthed() {
+  if (!_cloudPb || _cloudPb.baseUrl !== cloudBase() || !_cloudPb.authStore.isValid) {
+    await cloudDeviceAuth();
+  }
+  return _cloudPb;
+}
+
+async function cloudCall(fn) {
+  var pb = await cloudAuthed();
+  try {
+    return await fn(pb);
+  } catch (err) {
+    if (cloudStatus(err) === 401) {
+      try { if (_cloudPb) _cloudPb.authStore.clear(); } catch (e) {}
+      _cloudPb = null;
+      var pb2 = await cloudAuthed();
+      return await fn(pb2);
+    }
+    throw err;
+  }
 }
 
 // ─── Appairage ────────────────────────────────────────────────────────────
 
 async function cloudRegister(deviceName) {
-  var domain = cloudDomain();
-  if (!domain) throw new Error('Renseignez d\'abord le domaine du cloud (ex. https://ekol-cloud.example.com).');
+  cloudBase();
   var email = 'd-' + _cloudHex(6) + '@ekol-device.local';
   var secret = _cloudHex(16);
-  var org = dbGetOrganizationById(currentOrgId) || { nom: '' };
-  var dev = await cloudApi('/collections/devices/records', {
-    method: 'POST',
-    token: null,
-    retry: false,
-    body: {
-      email: email,
-      password: secret,
-      passwordConfirm: secret,
-      device_name: deviceName || 'Poste local',
-      org_name: org.nom || '',
-      app_version: (typeof NL_APPVERSION !== 'undefined' ? NL_APPVERSION : 'dev')
-    }
+  var org = dbGetOrganizationById(currentOrgId) || {};
+  var pub = cloudPublic();
+  var dev = await pub.collection('devices').create({
+    email: email,
+    password: secret,
+    passwordConfirm: secret,
+    device_name: deviceName || 'Poste local',
+    org_name: org.nom || '',
+    app_version: (typeof NL_APPVERSION !== 'undefined' ? NL_APPVERSION : 'dev')
   });
   var code = cloudNewCode();
-  await cloudApi('/collections/pairing_codes/records', {
-    method: 'POST',
-    token: null,
-    retry: false,
-    body: {
-      id: code,
-      device: dev.id,
-      status: 'pending',
-      expires_at: new Date(Date.now() + CLOUD_PAIRING_TTL_MIN * 60000).toISOString()
-    }
+  await pub.collection('pairing_codes').create({
+    id: code,
+    device: dev.id,
+    status: 'pending',
+    expires_at: new Date(Date.now() + CLOUD_PAIRING_TTL_MIN * 60000).toISOString()
   });
   await cloudSetSetting('cloud_device_email', email);
   await cloudSetSetting('cloud_device_secret', secret);
@@ -159,11 +161,10 @@ async function cloudRegister(deviceName) {
 }
 
 async function cloudCheckClaim(code) {
-  var rec = await cloudApi('/collections/pairing_codes/records/' + code, { token: null, retry: false });
+  var rec = await cloudPublic().collection('pairing_codes').getOne(code);
   if (rec.status === 'claimed') {
     await cloudSetSetting('cloud_code', '');
-    await cloudDeviceAuth();
-    var dev = await cloudApi('/collections/devices/records/' + rec.device, {});
+    var dev = await cloudCall(function(pb) { return pb.collection('devices').getOne(rec.device); });
     await cloudSetSetting('cloud_sub_active', dev.sub_active ? '1' : '0');
     await cloudSetSetting('cloud_sub_expires', dev.sub_expires || '');
     _cloudDirty = true;
@@ -175,8 +176,7 @@ async function cloudUnlink() {
   var id = cloudGetSetting('cloud_device_id', '');
   if (id && _cloudToken !== false) {
     try {
-      await cloudDeviceAuth();
-      await cloudApi('/collections/devices/records/' + id, { method: 'DELETE' });
+      await cloudCall(function(pb) { return pb.collection('devices').delete(id); });
     } catch (e) { /* appareil déjà supprimé côté cloud : on nettoie quand même */ }
   }
   var keys = ['cloud_device_email', 'cloud_device_secret', 'cloud_device_id', 'cloud_code',
@@ -184,6 +184,9 @@ async function cloudUnlink() {
   for (var i = 0; i < keys.length; i++) {
     await cloudSetSetting(keys[i], '');
   }
+  try { if (_cloudPb) _cloudPb.authStore.clear(); } catch (e) {}
+  _cloudPb = null;
+  _cloudPbPublic = null;
   _cloudToken = null;
   _cloudDirty = false;
   _cloudLastStatus = null;
@@ -192,11 +195,10 @@ async function cloudUnlink() {
 async function cloudDeviceInfo() {
   var id = cloudGetSetting('cloud_device_id', '');
   if (!id) return null;
-  await cloudDeviceAuth();
-  return cloudApi('/collections/devices/records/' + id, {});
+  return cloudCall(function(pb) { return pb.collection('devices').getOne(id); });
 }
 
-// ─── Instantané local (canonique + checksum) ───────────────────────────────
+// ─── Instantané local (canonique + checksum) ──────────────────────────────
 
 function cloudStable(value) {
   if (value === null || value === undefined) return 'null';
@@ -353,30 +355,34 @@ async function cloudSyncNow(note) {
   var csvs = cloudBuildCSVs();
   var org = dbGetOrganizationById(currentOrgId) || {};
 
-  var form = new FormData();
-  form.append('device', deviceId);
-  form.append('owner', owner);
-  form.append('org_local_id', String(currentOrgId));
-  form.append('org_name', org.nom || '');
-  form.append('checksum', checksum);
-  form.append('app_version', snapshot.app_version);
-  form.append('counts', JSON.stringify(snapshot.counts));
-  if (note) form.append('note', String(note).slice(0, 300));
-  form.append('snapshot', new Blob([JSON.stringify(snapshot)], { type: 'application/json' }), 'snapshot.json');
-  var backup = await cloudApi('/collections/backups/records', { method: 'POST', body: form });
+  var backup = await cloudCall(function(pb) {
+    return pb.collection('backups').create({
+      device: deviceId,
+      owner: owner,
+      org_local_id: currentOrgId,
+      org_name: org.nom || '',
+      checksum: checksum,
+      app_version: snapshot.app_version,
+      counts: snapshot.counts,
+      note: note ? String(note).slice(0, 300) : '',
+      snapshot: new Blob([JSON.stringify(snapshot)], { type: 'application/json' })
+    });
+  });
 
   for (var i = 0; i < csvs.length; i++) {
-    var f = new FormData();
-    f.append('backup', backup.id);
-    f.append('device', deviceId);
-    f.append('owner', owner);
-    f.append('kind', csvs[i].kind);
-    f.append('label', csvs[i].label);
-    f.append('file', new Blob([csvs[i].content], { type: 'text/csv' }), csvs[i].filename);
-    await cloudApi('/collections/exports/records', { method: 'POST', body: f });
+    await cloudCall(function(pb) {
+      return pb.collection('exports').create({
+        backup: backup.id,
+        device: deviceId,
+        owner: owner,
+        kind: csvs[i].kind,
+        label: csvs[i].label,
+        file: new Blob([csvs[i].content], { type: 'text/csv' })
+      });
+    });
   }
 
-  var dev = await cloudApi('/collections/devices/records/' + cloudGetSetting('cloud_device_id', ''), {});
+  var dev = await cloudCall(function(pb) { return pb.collection('devices').getOne(deviceId); });
   await cloudSetSetting('cloud_last_sync_at', new Date().toISOString());
   await cloudSetSetting('cloud_last_checksum', checksum);
   await cloudSetSetting('cloud_sub_active', dev.sub_active ? '1' : '0');
@@ -389,10 +395,9 @@ async function cloudSyncNow(note) {
 async function cloudLatestBackup() {
   var id = cloudGetSetting('cloud_device_id', '');
   if (!id) return null;
-  await cloudDeviceAuth();
-  // Note : tri + filtre serveur évités (voir cloud/README.md « Quirks PocketBase ») :
-  // la règle d'accès restreint déjà aux sauvegardes de l'appareil.
-  var res = await cloudApi('/collections/backups/records?perPage=50', {});
+  // Pas de tri/filtre serveur (voir cloud/README.md « Quirks PocketBase ») :
+  // la règle restreint déjà aux sauvegardes de l'appareil.
+  var res = await cloudCall(function(pb) { return pb.collection('backups').getList(1, 50); });
   var items = (res.items || []).filter(function(b) { return b.device === id; });
   items.sort(function(a, b) { return String(b.created).localeCompare(String(a.created)); });
   return items.length ? items[0] : null;
@@ -436,10 +441,11 @@ async function cloudVerify() {
 }
 
 async function cloudDownloadBackup(backupId) {
-  await cloudDeviceAuth();
-  var rec = await cloudApi('/collections/backups/records/' + backupId, {});
-  var ft = await cloudApi('/files/token', { method: 'POST', body: {} });
-  var res = await fetch(cloudDomain() + '/api/files/backups/' + backupId + '/' + rec.snapshot + '?token=' + ft.token);
+  var rec = await cloudCall(function(pb) { return pb.collection('backups').getOne(backupId); });
+  var ft = await cloudCall(function(pb) { return pb.send('/api/files/token', { method: 'POST' }); });
+  var pb = await cloudAuthed();
+  var dlUrl = pb.files.getURL(rec, rec.snapshot, { token: ft.token });
+  var res = await fetch(dlUrl);
   if (!res.ok) throw new Error('Téléchargement impossible (HTTP ' + res.status + ').');
   var snap = JSON.parse(await res.text());
   if (!snap || snap.app !== 'ekol-snapshot' || !snap.tables) {
